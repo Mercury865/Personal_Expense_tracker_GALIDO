@@ -1,0 +1,106 @@
+/* ── Global Styles ── */
+body {
+  font-family: Arial, sans-serif;
+  margin: 20px;
+  background: #f9f9f9;
+  color: #333;
+}
+
+h1, h2 {
+  text-align: center;
+  margin-bottom: 15px;
+}
+
+/* ── Stats Section ── */
+div > span {
+  display: inline-block;
+  margin: 5px 15px;
+  font-weight: bold;
+}
+
+/* ── Form ── */
+form {
+  max-width: 500px;
+  margin: 0 auto 30px auto;
+  padding: 15px;
+  background: #fff;
+  border-radius: 5px;
+  box-shadow: 0 0 8px rgba(0,0,0,0.1);
+}
+
+form input, form select {
+  width: 100%;
+  padding: 8px 10px;
+  margin: 8px 0;
+  border-radius: 3px;
+  border: 1px solid #ccc;
+  box-sizing: border-box;
+}
+
+form button {
+  padding: 10px 15px;
+  margin-top: 10px;
+  cursor: pointer;
+  border: none;
+  border-radius: 3px;
+  background-color: #2d89ef;
+  color: white;
+  font-weight: bold;
+}
+
+form button:hover {
+  background-color: #1b5fbf;
+}
+
+/* ── Transactions List ── */
+ul {
+  list-style: none;
+  max-width: 600px;
+  margin: 0 auto;
+  padding: 0;
+}
+
+li {
+  background: #fff;
+  margin-bottom: 8px;
+  padding: 10px;
+  border-radius: 5px;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  box-shadow: 0 0 5px rgba(0,0,0,0.05);
+}
+
+li button {
+  margin-left: 5px;
+  padding: 5px 8px;
+  font-size: 0.9em;
+  border-radius: 3px;
+  border: none;
+  cursor: pointer;
+}
+
+li button:hover {
+  opacity: 0.8;
+}
+
+li button:nth-child(2) { /* Delete button */
+  background-color: #e74c3c;
+  color: white;
+}
+
+li button:nth-child(1) { /* Edit button */
+  background-color: #f1c40f;
+  color: white;
+}
+
+/* ── Responsive ── */
+@media (max-width: 600px) {
+  li {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+  li button {
+    margin-top: 5px;
+  }
+}

@@ -1,0 +1,40 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Expense Tracker</title>
+  <link rel="stylesheet" href="style.css">
+</head>
+<body>
+
+  <h1>Expense Tracker</h1>
+
+  <!-- Stats -->
+  <div>
+    <span>Balance: <span id="balance">₱0.00</span></span>
+    <span>Income: <span id="income">₱0.00</span></span>
+    <span>Expenses: <span id="expenses">₱0.00</span></span>
+  </div>
+
+  <!-- Add Transaction -->
+  <h2>Add Transaction</h2>
+  <form id="tx-form">
+    <select id="type">
+      <option value="income">Income</option>
+      <option value="expense">Expense</option>
+    </select>
+    <input type="number" id="amount" placeholder="Amount" min="0.01" step="0.01">
+    <input type="text" id="category" placeholder="Category">
+    <input type="text" id="description" placeholder="Description">
+    <input type="date" id="date">
+    <button type="submit">Add</button>
+  </form>
+
+  <!-- Transactions List -->
+  <h2>Transactions</h2>
+  <ul id="transactions"></ul>
+
+  <script src="app.js"></script>
+</body>
+</html>
