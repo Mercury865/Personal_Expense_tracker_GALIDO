@@ -1,6 +1,7 @@
 const mongoose = require('mongoose');
 
-const transactionSchema = new mongoose.Schema({
+const transactionSchema = new mongoose.Schema(
+  {
   type: {
     type: String,
     required: true,
@@ -13,7 +14,8 @@ const transactionSchema = new mongoose.Schema({
   },
   category: {
     type: String,
-    required: true
+    required: true,
+    enum: ['Food', 'Transportation', 'Salary', 'Utilities', 'Entertainment', 'Others']
   },
   description: {
     type: String,

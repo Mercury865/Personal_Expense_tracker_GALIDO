@@ -9,8 +9,7 @@ const app  = express();
 const PORT = 3000;
 
 mongoose.connect(
-  process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/expense_tracker',
-  { useNewUrlParser: true, useUnifiedTopology: true }
+  process.env.MONGO_URI || 'mongodb://127.0.0.1:27017/expense_tracker'
 )
 .then(() => console.log('Connected to MongoDB'))
 .catch(err => console.error('MongoDB connection error:', err));
@@ -29,5 +28,5 @@ app.get('*', (req, res) => {
 
 // starts the server
 app.listen(PORT, () => {
-  console.log(`✅ Expense Tracker running at http://localhost:${PORT}`);
+  console.log(`Expense Tracker running at http://localhost:${PORT}`);
 });

@@ -1,172 +1,211 @@
-// Get HTML elements
-const form = document.getElementById("tx-form");
+const form = document.getElementById("form-area");
 const list = document.getElementById("transactions");
 const balance = document.getElementById("balance");
 const income = document.getElementById("income");
 const expenses = document.getElementById("expenses");
 
-// Load transactions from server
-async function loadTransactions() {
+// edit elements
+const editTypeSelect = document.getElementById("edit-type");
+const editModal = document.getElementById("edit-modal");
+const editAmountInput = document.getElementById("edit-amount");
+const editCategorySelect = document.getElementById("edit-category");
+const editDescriptionInput = document.getElementById("edit-description");
+const editDateInput = document.getElementById("edit-date");
+const saveBtn = document.getElementById("save-btn");
+const cancelBtn = document.getElementById("cancel-btn");
 
-    const response = await fetch("/api/transactions");
-    const data = await response.json();
+let currentTransactionId = null;
 
-    if (!data.success) {
-        console.log("Error loading data");
-        return;
-    }
+function loadTransactions() {
+    fetch("/api/transactions")
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(data) {
+            if (data.success === false) {
+                console.log("Error loading data");
+                return;
+            }
 
-    const transactions = data.data.transactions;
+            const transactions = data.data.transactions;
 
-    list.innerHTML = "";
+            list.innerHTML = "";
 
-    for (let i = 0; i < transactions.length; i++) {
+            for (let i = 0; i < transactions.length; i++) {
+                const t = transactions[i];
 
-        const t = transactions[i];
+                const item = document.createElement("li");
 
-        const item = document.createElement("li");
+                const date = new Date(t.date).toISOString().split("T")[0];
 
-        const date = new Date(t.date).toISOString().split("T")[0];
+                // Create the text to display: happy face for income, sad face for expense lol
+                let typeIcon;
+                if (t.type === "expense") {
+                    typeIcon = "😢";
+                } else {
+                    typeIcon = "😊";
+                }
+                const text =
+                    typeIcon + " : " 
+                    + t.category + " : ₱" 
+                    + parseFloat(t.amount) +" : " 
+                    + "Desc: \"" + (t.description || "") + "\" : " 
+                    + date;
 
-        item.textContent =
-            t.type.toUpperCase() +
-            " | " +
-            t.category +
-            " | ₱" +
-            parseFloat(t.amount).toFixed(2) +
-            " | " +
-            (t.description || "") +
-            " | " +
-            date;
+                item.textContent = text;
 
-        // Edit button
-        const editButton = document.createElement("button");
-        editButton.textContent = "Edit";
-        editButton.onclick = function () {
-            editTransaction(t);
-        };
+                const editButton = document.createElement("button");
+                editButton.textContent = "Edit";
+                editButton.type = "button";
+                editButton.onclick = function() {
+                    editTransaction(t);
+                };
 
-        // Delete button
-        const deleteButton = document.createElement("button");
-        deleteButton.textContent = "Delete";
-        deleteButton.onclick = function () {
-            deleteTransaction(t._id);
-        };
+                // Create a Delete button
+                const deleteButton = document.createElement("button");
+                deleteButton.textContent = "Delete";
+                deleteButton.type = "button";
+                deleteButton.onclick = function() {
+                    deleteTransaction(t._id);
+                };
 
-        item.appendChild(editButton);
-        item.appendChild(deleteButton);
+                // Add buttons to the list 
+                item.appendChild(editButton);
+                item.appendChild(deleteButton);
 
-        list.appendChild(item);
-    }
+                // Add the list item to the page itself
+                list.appendChild(item);
+            }
 
-    income.textContent = "₱" + (data.data.total_income || 0).toFixed(2);
-    expenses.textContent = "₱" + (data.data.total_expenses || 0).toFixed(2);
-    balance.textContent = "₱" + (data.data.balance || 0).toFixed(2);
+            income.textContent = "₱" + (data.data.total_income || 0).toFixed(2);
+            expenses.textContent = "₱" + (data.data.total_expenses || 0).toFixed(2);
+            balance.textContent = "₱" + (data.data.balance || 0).toFixed(2);
+        });
 }
 
-
-// Add transaction
-form.addEventListener("submit", async function (e) {
-
+form.addEventListener("submit", function(e) {
     e.preventDefault();
 
+    // Get the values from the form
     const type = document.getElementById("type").value;
-    const amount = parseFloat(document.getElementById("amount").value);
+    const amount = document.getElementById("amount").value;
     const category = document.getElementById("category").value;
     const description = document.getElementById("description").value;
     const date = document.getElementById("date").value;
 
-    if (!amount || !category || !date) {
-        alert("Please fill out all required fields.");
+    // Check if all required fields are actually filled or not
+    if (amount === "" || category === "" || date === "") {
+        alert("Fill out ALL the required fields!");
         return;
     }
 
+    const amountNumber = parseFloat(amount);
     const transaction = {
         type: type,
-        amount: amount,
+        amount: amountNumber,
         category: category,
         description: description,
         date: date
     };
 
-    const response = await fetch("/api/transactions", {
+    // Send the transaction to the server
+    fetch("/api/transactions", {
         method: "POST",
         headers: {
             "Content-Type": "application/json"
         },
         body: JSON.stringify(transaction)
-    });
+    })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(result) {
+            if (result.success === false) {
+                alert("Error: " + result.message);
+                return;
+            }
 
-    const result = await response.json();
+            form.reset();
 
-    if (!result.success) {
-        alert("Error: " + result.message);
-        return;
-    }
+            const today = new Date().toISOString().split("T")[0];
+            document.getElementById("date").value = today;
 
-    form.reset();
-
-    document.getElementById("date").value =
-        new Date().toISOString().split("T")[0];
-
-    loadTransactions();
+            loadTransactions();
+        });
 });
 
+function editTransaction(transaction) {
+    // Store the transaction ID to use in save
+    currentTransactionId = transaction._id;
 
-// Edit transaction
-async function editTransaction(transaction) {
+    // Fill the edit tab with current transaction data
+    editAmountInput.value = transaction.amount;
+    editCategorySelect.value = transaction.category;
+    editDescriptionInput.value = transaction.description || "";
+    editDateInput.value = new Date(transaction.date).toISOString().split("T")[0];
 
-    const newAmount = prompt("Amount:", transaction.amount);
-    const newCategory = prompt("Category:", transaction.category);
-    const newDescription = prompt("Description:", transaction.description || "");
-    const newDate = prompt(
-        "Date (YYYY-MM-DD):",
-        new Date(transaction.date).toISOString().split("T")[0]
-    );
+    // Show the edit screen
+    editModal.classList.remove("hidden");
+}
 
+// Save button click handler
+saveBtn.addEventListener("click", function() {
     const updated = {
-        type: transaction.type,
-        amount: parseFloat(newAmount),
-        category: newCategory,
-        description: newDescription,
-        date: newDate
+        type: editTypeSelect.value, 
+        amount: parseFloat(editAmountInput.value),
+        category: editCategorySelect.value,
+        description: editDescriptionInput.value,
+        date: editDateInput.value
     };
 
-    const response = await fetch("/api/transactions/" + transaction._id, {
+    fetch("/api/transactions/" + currentTransactionId, {
         method: "PUT",
         headers: {
             "Content-Type": "application/json"
         },
         body: JSON.stringify(updated)
-    });
+    })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(result) {
+            if (result.success === false) {
+                alert("Error: " + result.message);
+                return;
+            }
 
-    const result = await response.json();
+            // Hides it
+            editModal.classList.add("hidden");
+            
+            loadTransactions();
+        });
+});
 
-    if (!result.success) {
-        alert("Error: " + result.message);
+// Cancel button click handler
+cancelBtn.addEventListener("click", function() {
+    editModal.classList.add("hidden");
+});
+
+function deleteTransaction(id) {
+    const confirmDelete = confirm("Delete this transaction?");
+
+    // If the user clicks cancel, then it stops
+    if (confirmDelete === false) {
         return;
     }
 
-    loadTransactions();
-}
-
-
-// Delete transaction
-async function deleteTransaction(id) {
-
-    const confirmDelete = confirm("Delete this transaction?");
-    if (!confirmDelete) return;
-
-    await fetch("/api/transactions/" + id, {
+    fetch("/api/transactions/" + id, {
         method: "DELETE"
-    });
-
-    loadTransactions();
+    })
+        .then(function(response) {
+            return response.json();
+        })
+        .then(function(result) {
+            loadTransactions();
+        });
 }
 
-
-// Set today's date when page loads
-document.getElementById("date").value =
-    new Date().toISOString().split("T")[0];
+const today = new Date().toISOString().split("T")[0];
+document.getElementById("date").value = today;
 
 loadTransactions();
