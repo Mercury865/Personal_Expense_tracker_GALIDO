@@ -1,134 +1,172 @@
-// Get elements
-const form = document.getElementById('tx-form');
-const txList = document.getElementById('transactions');
-const balanceEl = document.getElementById('balance');
-const incomeEl = document.getElementById('income');
-const expenseEl = document.getElementById('expenses');
+// Get HTML elements
+const form = document.getElementById("tx-form");
+const list = document.getElementById("transactions");
+const balance = document.getElementById("balance");
+const income = document.getElementById("income");
+const expenses = document.getElementById("expenses");
 
-// Helpers
-function formatCurrency(n) {
-  return '₱' + parseFloat(n).toFixed(2);
-}
-
-function formatDate(dateString) {
-  const date = new Date(dateString);
-  return date.toISOString().split('T')[0];
-}
-
-// Load all transactions
+// Load transactions from server
 async function loadTransactions() {
-  try {
-    const res = await fetch('/api/transactions');
-    const data = await res.json();
+
+    const response = await fetch("/api/transactions");
+    const data = await response.json();
 
     if (!data.success) {
-      console.error(data.message);
-      return;
+        console.log("Error loading data");
+        return;
     }
 
-    const txs = data.data.transactions;
-    txList.innerHTML = '';
+    const transactions = data.data.transactions;
 
-    txs.forEach(tx => {
-      const li = document.createElement('li');
-      li.textContent = `${tx.type.toUpperCase()} | ${tx.category} | ${formatCurrency(tx.amount)} | ${tx.description || ''} | ${formatDate(tx.date)}`;
+    list.innerHTML = "";
 
-      // Edit button
-      const editBtn = document.createElement('button');
-      editBtn.textContent = 'Edit';
-      editBtn.onclick = () => editTransaction(tx);
-      li.appendChild(editBtn);
+    for (let i = 0; i < transactions.length; i++) {
 
-      // Delete button
-      const delBtn = document.createElement('button');
-      delBtn.textContent = 'Delete';
-      delBtn.onclick = () => deleteTransaction(tx._id);
-      li.appendChild(delBtn);
+        const t = transactions[i];
 
-      txList.appendChild(li);
-    });
+        const item = document.createElement("li");
 
-    // Use backend totals
-    incomeEl.textContent = formatCurrency(data.data.total_income || 0);
-    expenseEl.textContent = formatCurrency(data.data.total_expenses || 0);
-    balanceEl.textContent = formatCurrency(data.data.balance || 0);
+        const date = new Date(t.date).toISOString().split("T")[0];
 
-  } catch (err) {
-    console.error('Error loading transactions:', err);
-  }
+        item.textContent =
+            t.type.toUpperCase() +
+            " | " +
+            t.category +
+            " | ₱" +
+            parseFloat(t.amount).toFixed(2) +
+            " | " +
+            (t.description || "") +
+            " | " +
+            date;
+
+        // Edit button
+        const editButton = document.createElement("button");
+        editButton.textContent = "Edit";
+        editButton.onclick = function () {
+            editTransaction(t);
+        };
+
+        // Delete button
+        const deleteButton = document.createElement("button");
+        deleteButton.textContent = "Delete";
+        deleteButton.onclick = function () {
+            deleteTransaction(t._id);
+        };
+
+        item.appendChild(editButton);
+        item.appendChild(deleteButton);
+
+        list.appendChild(item);
+    }
+
+    income.textContent = "₱" + (data.data.total_income || 0).toFixed(2);
+    expenses.textContent = "₱" + (data.data.total_expenses || 0).toFixed(2);
+    balance.textContent = "₱" + (data.data.balance || 0).toFixed(2);
 }
+
 
 // Add transaction
-form.addEventListener('submit', async e => {
-  e.preventDefault();
+form.addEventListener("submit", async function (e) {
 
-  const dateInput = document.getElementById('date').value;
+    e.preventDefault();
 
-  const tx = {
-    type: document.getElementById('type').value,
-    amount: parseFloat(document.getElementById('amount').value),
-    category: document.getElementById('category').value,
-    description: document.getElementById('description').value,
-    date: dateInput
-  };
+    const type = document.getElementById("type").value;
+    const amount = parseFloat(document.getElementById("amount").value);
+    const category = document.getElementById("category").value;
+    const description = document.getElementById("description").value;
+    const date = document.getElementById("date").value;
 
-  if (!tx.amount || !tx.category || !dateInput) {
-    alert('Please fill out all required fields!');
-    return;
-  }
+    if (!amount || !category || !date) {
+        alert("Please fill out all required fields.");
+        return;
+    }
 
-  const response = await fetch('/api/transactions', {
-    method: 'POST',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify(tx)
-  });
+    const transaction = {
+        type: type,
+        amount: amount,
+        category: category,
+        description: description,
+        date: date
+    };
 
-  const result = await response.json();
-  if (!result.success) {
-    alert('Error: ' + result.message);
-    return;
-  }
+    const response = await fetch("/api/transactions", {
+        method: "POST",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(transaction)
+    });
 
-  form.reset();
-  loadTransactions();
+    const result = await response.json();
+
+    if (!result.success) {
+        alert("Error: " + result.message);
+        return;
+    }
+
+    form.reset();
+
+    document.getElementById("date").value =
+        new Date().toISOString().split("T")[0];
+
+    loadTransactions();
 });
 
+
 // Edit transaction
-async function editTransaction(tx) {
-  const newAmount = prompt('Amount', tx.amount);
-  const newCategory = prompt('Category', tx.category);
-  const newDesc = prompt('Description', tx.description || '');
-  const newDate = prompt('Date (YYYY-MM-DD)', formatDate(tx.date));
+async function editTransaction(transaction) {
 
-  const response = await fetch(`/api/transactions/${tx._id}`, {
-    method: 'PUT',
-    headers: { 'Content-Type': 'application/json' },
-    body: JSON.stringify({
-      type: tx.type,
-      amount: parseFloat(newAmount),
-      category: newCategory,
-      description: newDesc,
-      date: newDate
-    })
-  });
+    const newAmount = prompt("Amount:", transaction.amount);
+    const newCategory = prompt("Category:", transaction.category);
+    const newDescription = prompt("Description:", transaction.description || "");
+    const newDate = prompt(
+        "Date (YYYY-MM-DD):",
+        new Date(transaction.date).toISOString().split("T")[0]
+    );
 
-  const result = await response.json();
-  if (!result.success) {
-    alert('Error: ' + result.message);
-    return;
-  }
+    const updated = {
+        type: transaction.type,
+        amount: parseFloat(newAmount),
+        category: newCategory,
+        description: newDescription,
+        date: newDate
+    };
 
-  loadTransactions();
+    const response = await fetch("/api/transactions/" + transaction._id, {
+        method: "PUT",
+        headers: {
+            "Content-Type": "application/json"
+        },
+        body: JSON.stringify(updated)
+    });
+
+    const result = await response.json();
+
+    if (!result.success) {
+        alert("Error: " + result.message);
+        return;
+    }
+
+    loadTransactions();
 }
+
 
 // Delete transaction
 async function deleteTransaction(id) {
-  if (!confirm('Delete this transaction?')) return;
 
-  await fetch(`/api/transactions/${id}`, { method: 'DELETE' });
-  loadTransactions();
+    const confirmDelete = confirm("Delete this transaction?");
+    if (!confirmDelete) return;
+
+    await fetch("/api/transactions/" + id, {
+        method: "DELETE"
+    });
+
+    loadTransactions();
 }
 
-// Initialize
-document.getElementById('date').value = new Date().toISOString().split('T')[0];
+
+// Set today's date when page loads
+document.getElementById("date").value =
+    new Date().toISOString().split("T")[0];
+
 loadTransactions();

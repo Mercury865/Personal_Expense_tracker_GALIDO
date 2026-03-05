@@ -3,9 +3,10 @@ const Transaction = require('../models/transaction');
 // Get all transactions
 async function getTransactions(req, res) {
   try {
-    const transactions = await Transaction.find().sort({ date: -1, createdAt: -1 });
 
-    const stats = await Transaction.aggregate([
+    const list = await Transaction.find().sort({ date: -1, createdAt: -1 });
+
+    const result = await Transaction.aggregate([
       {
         $group: {
           _id: null,
@@ -15,60 +16,122 @@ async function getTransactions(req, res) {
       }
     ]);
 
-    const totals = stats[0] || { total_income: 0, total_expenses: 0 };
-    const balance = totals.total_income - totals.total_expenses;
+    const tot = result[0] || { total_income: 0, total_expenses: 0 };
+    const bal = tot.total_income - tot.total_expenses;
 
-    res.json({ 
-      success: true, 
-      data: { transactions, total_income: totals.total_income, total_expenses: totals.total_expenses, balance } 
+    res.json({
+      success: true,
+      data: {
+        transactions: list,
+        total_income: tot.total_income,
+        total_expenses: tot.total_expenses,
+        balance: bal
+      }
     });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Failed to fetch transactions.' });
+    console.log(err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to fetch transactions."
+    });
   }
 }
 
-// Add a transaction
+
+// Add transaction
 async function addTransaction(req, res) {
   try {
-    const { type, amount, category, description, date } = req.body;
-    const newTx = await Transaction.create({ type, amount, category, description, date });
-    res.status(201).json({ success: true, data: newTx });
+
+    const type = req.body.type;
+    const amount = req.body.amount;
+    const category = req.body.category;
+    const description = req.body.description;
+    const date = req.body.date;
+
+    const tx = await Transaction.create({
+      type: type,
+      amount: amount,
+      category: category,
+      description: description,
+      date: date
+    });
+
+    res.status(201).json({
+      success: true,
+      data: tx
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(400).json({ success: false, message: err.message });
+    console.log(err);
+    res.status(400).json({
+      success: false,
+      message: err.message
+    });
   }
 }
 
-// Update a transaction
+
+// Update transaction
 async function updateTransaction(req, res) {
   try {
-    const updatedTx = await Transaction.findByIdAndUpdate(
-      req.params.id,
+
+    const id = req.params.id;
+
+    const updated = await Transaction.findByIdAndUpdate(
+      id,
       req.body,
       { new: true, runValidators: true }
     );
 
-    if (!updatedTx) return res.status(404).json({ success: false, message: 'Transaction not found.' });
+    if (!updated) {
+      return res.status(404).json({
+        success: false,
+        message: "Transaction not found."
+      });
+    }
 
-    res.json({ success: true, data: updatedTx });
+    res.json({
+      success: true,
+      data: updated
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(400).json({ success: false, message: err.message });
+    console.log(err);
+    res.status(400).json({
+      success: false,
+      message: err.message
+    });
   }
 }
 
-// Delete a transaction
+
+// Delete transaction
 async function deleteTransaction(req, res) {
   try {
-    const deletedTx = await Transaction.findByIdAndDelete(req.params.id);
 
-    if (!deletedTx) return res.status(404).json({ success: false, message: 'Transaction not found.' });
+    const id = req.params.id;
 
-    res.json({ success: true, message: 'Transaction deleted.' });
+    const deleted = await Transaction.findByIdAndDelete(id);
+
+    if (!deleted) {
+      return res.status(404).json({
+        success: false,
+        message: "Transaction not found."
+      });
+    }
+
+    res.json({
+      success: true,
+      message: "Transaction is deleted."
+    });
+
   } catch (err) {
-    console.error(err);
-    res.status(500).json({ success: false, message: 'Failed to delete transaction.' });
+    console.log(err);
+    res.status(500).json({
+      success: false,
+      message: "Failed to delete transaction."
+    });
   }
 }
 
